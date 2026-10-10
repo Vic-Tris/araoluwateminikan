@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Howl } from 'howler';
 import { Pause, Play } from 'lucide-react';
 
+const ambientAudioUrl = new URL('../../audios/ambient music.mp3', import.meta.url).href;
+
 interface BackgroundAudioProps {
   enabled: boolean;
   onToggle: () => void;
@@ -17,7 +19,7 @@ export function BackgroundAudio({ enabled, onToggle, onReadyChange, className = 
     if (!soundRef.current) {
       try {
         soundRef.current = new Howl({
-          src: ['/audio/ambient-space.mp3'],
+          src: [ambientAudioUrl],
           volume: 0.18,
           loop: true,
           html5: true,

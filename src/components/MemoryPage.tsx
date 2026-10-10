@@ -70,7 +70,7 @@ export function MemoryPage({ memory, index, total, onClose, onPrev, onNext }: Me
                           alt={`${memory.title} memory ${imageIndex + 1}`}
                           loading="lazy"
                           decoding="async"
-                          className="h-full w-full object-cover object-top p-1"
+                          className={`h-full w-full ${memory.id === 'memory-3' ? 'object-fill' : 'object-cover object-top'} p-1`}
                         />
                       </div>
                       <figcaption className="px-3 pb-1 pt-3 text-center text-xs leading-relaxed text-slate-300 sm:text-sm">

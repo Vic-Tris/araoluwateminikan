@@ -10,6 +10,8 @@ import { RomanticBubbles } from '@/components/RomanticBubbles';
 import { birthdayPortrait, constellationNodes, secretNode, secretQuestions } from '@/data/constellation';
 import type { ConstellationNode } from '@/types/constellation';
 
+const secretEpilogueAudioUrl = new URL('../audios/secret epilogue.mp3', import.meta.url).href;
+
 function App() {
   const secretAudioRef = useRef<Howl | null>(null);
   const [ambientAudioReady, setAmbientAudioReady] = useState(false);
@@ -22,7 +24,7 @@ function App() {
   const [showSecretNode, setShowSecretNode] = useState(false);
   const [explorationNotice, setExplorationNotice] = useState(false);
   const [secretUnlocked, setSecretUnlocked] = useState(false);
-  const [audioEnabled, setAudioEnabled] = useState(false);
+  const [audioEnabled, setAudioEnabled] = useState(true);
   const [secretQuestionIndex, setSecretQuestionIndex] = useState(0);
   const [secretAnswer, setSecretAnswer] = useState('');
   const [secretError, setSecretError] = useState('');
@@ -41,7 +43,7 @@ function App() {
 
   useEffect(() => {
     const secretAudio = new Howl({
-      src: ['/audio/secret-reveal.mp3'],
+      src: [secretEpilogueAudioUrl],
       volume: 0.7,
       loop: false,
       html5: true,
@@ -49,7 +51,7 @@ function App() {
       onload: () => setSecretAudioReady(true),
       onloaderror: () => {
         setSecretAudioReady(false);
-        console.warn('Secret reveal audio is unavailable. Add secret-reveal.mp3 to public/audio to enable it.');
+        console.warn('Secret epilogue audio is unavailable.');
       },
       onplay: () => setSecretAudioPlaying(true),
       onpause: () => setSecretAudioPlaying(false),
@@ -90,13 +92,17 @@ function App() {
     }
   }, [allMemoriesExplored, grandFinaleSeen, grandFinaleOpen]);
 
+  const markMemoryExplored = useCallback((nodeId: string) => {
+    setExploredIds((previous) => (previous.includes(nodeId) ? previous : [...previous, nodeId]));
+  }, []);
+
   const openMemory = useCallback(
     (nodeId: string) => {
       setSelectedNodeId(nodeId);
       setExplorationNotice(false);
-      setExploredIds((previous) => (previous.includes(nodeId) ? previous : [...previous, nodeId]));
+      markMemoryExplored(nodeId);
     },
-    [],
+    [markMemoryExplored],
   );
 
   const handleCloseMemory = useCallback(() => {
@@ -107,8 +113,10 @@ function App() {
     if (!selectedMemory) return;
     const currentIndex = primaryMemoryIds.indexOf(selectedMemory.id);
     const nextIndex = Math.max(0, currentIndex - 1);
-    setSelectedNodeId(primaryMemoryIds[nextIndex]);
-  }, [primaryMemoryIds, selectedMemory]);
+    const nextMemoryId = primaryMemoryIds[nextIndex];
+    setSelectedNodeId(nextMemoryId);
+    markMemoryExplored(nextMemoryId);
+  }, [markMemoryExplored, primaryMemoryIds, selectedMemory]);
 
   const handleNextMemory = useCallback(() => {
     if (!selectedMemory) return;
@@ -123,8 +131,10 @@ function App() {
     }
 
     const nextIndex = Math.min(primaryMemoryIds.length - 1, currentIndex + 1);
-    setSelectedNodeId(primaryMemoryIds[nextIndex]);
-  }, [primaryMemoryIds, selectedMemory]);
+    const nextMemoryId = primaryMemoryIds[nextIndex];
+    setSelectedNodeId(nextMemoryId);
+    markMemoryExplored(nextMemoryId);
+  }, [markMemoryExplored, primaryMemoryIds, selectedMemory]);
 
   const resetSecretState = useCallback(() => {
     setSecretQuestionIndex(0);
@@ -153,6 +163,7 @@ function App() {
 
       if (normalizedInput.toLowerCase() === normalizedCorrect.toLowerCase()) {
         if (secretQuestionIndex === secretQuestions.length - 1) {
+          setAudioEnabled(false);
           secretAudioRef.current?.play();
           setSecretUnlocking(true);
           setSecretError('');
@@ -181,8 +192,10 @@ function App() {
     setGrandFinaleOpen(false);
     setGrandFinaleSeen(true);
     setShowSecretNode(true);
-    setSelectedNodeId(null);
-  }, []);
+    setExplorationNotice(false);
+    setSelectedNodeId('secret-node');
+    resetSecretState();
+  }, [resetSecretState]);
 
   const handleCloseSecretExperience = useCallback(() => {
     setSelectedNodeId(null);
@@ -254,7 +267,7 @@ function App() {
                 <input
                   value={secretAnswer}
                   onChange={(event) => setSecretAnswer(event.target.value)}
-                  placeholder="Your answer"
+                  placeholder={secretQuestionIndex === secretQuestions.length - 1 ? 'DD/MM/YYYY' : 'Your answer'}
                   className="w-full border-0 bg-transparent px-4 py-4 text-base text-white placeholder:text-slate-500 focus:outline-none"
                   autoFocus
                 />
@@ -454,7 +467,7 @@ function App() {
               <div className="flex min-w-0 items-center justify-between gap-3">
                 <div>
                   <p className="text-[10px] uppercase tracking-[0.2em] text-amber-100/80">Ambient soundtrack</p>
-                  <p className="mt-1 text-xs text-slate-400">{ambientAudioReady ? (audioEnabled ? 'Playing' : 'Paused') : 'Add a playable ambient-space.mp3 to public/audio'}</p>
+                  <p className="mt-1 text-xs text-slate-400">{ambientAudioReady ? (audioEnabled ? 'Playing' : 'Paused') : 'Ambient audio unavailable'}</p>
                 </div>
                 <button
                   type="button"
@@ -471,7 +484,7 @@ function App() {
               <div className="flex min-w-0 items-center justify-between gap-3">
                 <div>
                   <p className="text-[10px] uppercase tracking-[0.2em] text-amber-100/80">Secret reveal</p>
-                  <p className="mt-1 text-xs text-slate-400">{secretAudioReady ? (secretAudioPlaying ? 'Playing' : 'Ready') : 'Add secret-reveal.mp3 to public/audio'}</p>
+                  <p className="mt-1 text-xs text-slate-400">{secretAudioReady ? (secretAudioPlaying ? 'Playing' : 'Ready') : 'Secret audio unavailable'}</p>
                 </div>
                 <div className="flex shrink-0 gap-2">
                   <button
